@@ -2,10 +2,14 @@
 
 Create artisan profiles using the alarms and the modified version of the freshroastsr700 library for phidget
 
-Install with:
+### Install with:
 
-pip install create_artisan_alarms_phidget
+```pip install create_artisan_alarms_phidget```
 
-Then run with:
+### Then run with:
 
-create_artisan_alarms_phidget
+```create_artisan_alarms_phidget```
+
+### This short video illustrate the setup and how to use this tool:
+
+![](create_profile_demo.gif)
