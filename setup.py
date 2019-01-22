@@ -15,7 +15,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 setup(
     name='create_artisan_alarms_phidget',
-    version=0.1,
+    version=0.2,
     description='Create artisan profiles using the alarms and the modified version of the freshroastsr700 library for phidget',
     url='https://github.com/lucapinello/create_artisan_alarms_phidget',
     author='Luca Pinello',
