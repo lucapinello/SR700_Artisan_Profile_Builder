@@ -77,7 +77,12 @@ def main():
 
     print(\
 '''
-                _   _
+      _____ _____  ______ ___   ___
+     / ____|  __ \|____  / _ \ / _ \\
+    | (___ | |__) |   / / | | | | | |
+     \___ \|  _  /   / /| | | | | | |
+     ____) | | \ \  / / | |_| | |_| |
+    |_____/|_|  \_\/_/   \___/ \___/
      /\        | | (_)
     /  \   _ __| |_ _ ___  __ _ _ __
    / /\ \ | '__| __| / __|/ _` | '_ \\
@@ -95,8 +100,8 @@ def main():
    |____/ \__,_|_|_|\__,_|\___|_|
 ''')
 
-    print('Artisan Profile Builder - Luca Pinello 2019 (@lucapinello)')
-
+    print('SR700 Artisan Profile Builder - Luca Pinello 2019 (@lucapinello)\n\n')
+    print('Send bugs, suggestions or *green coffee* to lucapinello AT gmail DOT com\n\n')
 
     parser = argparse.ArgumentParser(description='Parameters',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -108,11 +113,9 @@ def main():
     parser.add_argument('--max_temp',  type=int,  default=500)
 
 
-
     args = parser.parse_args()
 
     n_points=args.n_points
-
 
     if n_points==2:
         use_log=True
@@ -201,6 +204,10 @@ def main():
     write_artisan_alarm_profile(args.profile_filename,seconds,temp_profile,fan_profile,decimate=20)
 
     print('\nProfile was saved in: %s.\n\nA pdf of this curve was saved in: %s!' % (args.profile_filename, pdf_filename))
+
+    print('\nSend bugs, suggestions or *green coffee* to lucapinello AT gmail DOT com\n')
+
+    print('Bye!\n')
 
 
 if __name__ == "__main__":
