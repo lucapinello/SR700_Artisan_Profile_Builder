@@ -1,4 +1,4 @@
-# create_artisan_alarms_phidget
+# SR700_Artisan_Profile_Builder
 
 Create artisan profiles using the alarms and the modified version of the freshroastsr700 library for phidget
 
@@ -13,3 +13,4 @@ Create artisan profiles using the alarms and the modified version of the freshro
 ### This short video illustrate the setup and how to use this tool:
 
 ![](create_profile_demo.gif)
+
