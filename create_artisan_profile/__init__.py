@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore")
 import argparse
 import sys
 import matplotlib
-matplotlib.use('Qt4Agg')
+matplotlib.use('Qt5Agg')
 import pylab as plt
 from pylab import plot, ginput, show, axis
 
