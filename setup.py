@@ -14,7 +14,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 
 setup(
-    name='create_artisan_alarms_phidget',
+    name='SR700_Artisan_Profile_Builder',
     version=0.3,
     description='Create artisan profiles using the alarms and the modified version of the freshroastsr700 library for phidget',
     url='https://github.com/lucapinello/create_artisan_alarms_phidget',
@@ -27,5 +27,5 @@ setup(
         'matplotlib',
         'PySide2',
     ],
-    entry_points = {'console_scripts': ['create_artisan_profile=create_artisan_profile:main']}
+    entry_points = {'console_scripts': ['SR700_Artisan_Profile_Builder=SR700_Artisan_Profile_Builder:main']}
     )

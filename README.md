@@ -4,15 +4,11 @@ Create artisan profiles using the alarms and the modified version of the freshro
 
 ### Install with:
 
-```pip install create_artisan_alarms_phidget```
-
-If you have Python3 you may need to install with:
-
-```pip3 install create_artisan_alarms_phidget```
+```pip install SR700_Artisan_Profile_Builder```
 
 ### Then run with:
 
-```create_artisan_alarms_phidget```
+```SR700_Artisan_Profile_Builder```
 
 ### This short video illustrate the setup and how to use this tool:
 
