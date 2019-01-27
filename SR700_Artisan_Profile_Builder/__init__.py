@@ -2,6 +2,8 @@
 #GPLv3 license
 
 from scipy import optimize, interpolate
+from scipy.interpolate import interp1d
+from scipy.signal import savgol_filter
 from collections import OrderedDict
 import numpy as np
 import scipy as sp
@@ -105,19 +107,21 @@ def main():
 
     parser = argparse.ArgumentParser(description='Parameters',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--n_points',  type=int,  default=5)
+    parser.add_argument('--n_points_temp',  type=int,  default=5)
+    parser.add_argument('--n_points_fan',  type=int,  default=5)
     parser.add_argument('-n','--profile_filename',  help='Output name', default='artisan_profile_alarms.alrm')
     parser.add_argument('--start_time',  type=int,  default=30)
-    parser.add_argument('--end_time',  type=int,  default=750)
+    parser.add_argument('--end_time',  type=int,  default=810)
     parser.add_argument('--min_temp',  type=int,  default=100)
     parser.add_argument('--max_temp',  type=int,  default=500)
 
 
     args = parser.parse_args()
 
-    n_points=args.n_points
+    n_points_temp=args.n_points_temp
+    n_points_fan=args.n_points_fan
 
-    if n_points==2:
+    if n_points_temp==2:
         use_log=True
     else:
         use_log=False
@@ -128,85 +132,195 @@ def main():
 
     x_min=min_time-30
     x_max=max_time+30
-    y_min=args.min_temp-50
-    y_max=args.max_temp+50
+    y_min_temp=args.min_temp-50
+    y_max_temp=args.max_temp+50
+    y_min_fan=0
+    y_max_fan=10
+    y_min_ror=0
+    y_max_ror=50
 
+
+    #plot to get points for temp
     fig = plt.figure(figsize=(11, 7))
     ax = fig.add_subplot(1, 1, 1)
-    plt.xticks(np.arange(x_min,x_max,30))
+    plt.xticks(np.arange(x_min,x_max,30),np.arange(x_min,x_max,30)/60,rotation = 45, ha="right")
 
-    plt.xlabel('Seconds')
+    plt.xlabel('Minutes')
     plt.ylabel('Temperature in F°')
 
     plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nPress the spacebar to add sequentially %d points inside the dotted area\nUse mouse right click to undo last point added' % n_points)
 
-
-    axis([x_min, x_max, y_min, y_max])
-    plt.plot([args.start_time,args.start_time],[y_min,y_max],'--k')
-    plt.plot([args.end_time,args.end_time],[y_min,y_max],'--k')
+    axis([x_min, x_max, y_min_temp, y_max_temp])
+    plt.plot([args.start_time,args.start_time],[y_min_temp,y_max_temp],'--k')
+    plt.plot([args.end_time,args.end_time],[y_min_temp,y_max_temp],'--k')
     plt.plot([x_min,x_max],[args.min_temp,args.min_temp],'--k')
     plt.plot([x_min,x_max],[args.max_temp,args.max_temp],'--k')
     plt.grid(True)
 
     cursor = Cursor(ax, useblit=True, color='k', linewidth=1)
 
-    pts = ginput(n_points,show_clicks=True, mouse_pop=True) # it will wait for three clicks
+    pts = ginput(n_points_temp,show_clicks=True, mouse_pop=True) # it will wait for three clicks
     plt.grid(True)
     print ("The points selected are:\n")
     print(pts) # ginput returns points as tuples
-    x=list(map(lambda x: x[0],pts)) # map applies the function passed as
-    y=list(map(lambda x: x[1],pts)) # first parameter to each element of pts
+    x_temp=list(map(lambda x: x[0],pts)) # map applies the function passed as
+    y_temp=list(map(lambda x: x[1],pts)) # first parameter to each element of pts
     plt.close()
 
     #sort points
 
-    idxs_sort=np.argsort(x)
+    idxs_sort=np.argsort(x_temp)
 
-    x=list(np.array(x)[idxs_sort])
-    y=list(np.array(y)[idxs_sort])
-
-    xi=np.arange(30,750,1)
+    x_temp=list(np.array(x_temp)[idxs_sort])
+    y_temp=list(np.array(y_temp)[idxs_sort])
+    xi_seconds=np.arange(x_min,x_max,1)
+    seconds=list(np.arange(min_time,max_time,1))
 
     if use_log:
-    	[a,b]=optimize.curve_fit(lambda t,a,b: a+b*np.log10(t),  x,  y)[0]
+    	[a,b]=optimize.curve_fit(lambda t,a,b: a+b*np.log10(t),  x_temp,  y_temp)[0]
     	f_fit = lambda x: a + b*np.log10(x)
-    	y_new=f_fit(xi)
+    	temp_profile=f_fit(seconds)
     else:
-    	tck = interpolate.splrep(x, y, s=0)
-    	y_new = interpolate.splev(xi, tck, der=0)
+    	tck_temp = interpolate.splrep(x_temp, y_temp, s=0)
+    	temp_profile= interpolate.splev(seconds, tck_temp, der=0)
 
-
+    #plot to get the obtained temp curve
     fig = plt.figure(figsize=(11, 7))
     pdf_filename='target_curve_for_%s.pdf' % args.profile_filename
     plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nClose this plot to save the profile in: %s\nA pdf of this curve will be also saved in: %s' % (args.profile_filename,pdf_filename))
     ax = fig.add_subplot(1, 1, 1)
-    plt.xticks(np.arange(x_min,x_max,30))
+    plt.xticks(np.arange(x_min,x_max,30),np.arange(x_min,x_max,30)/60,rotation = 45, ha="right")
 
-    plt.xlabel('Seconds')
+    plt.xlabel('Minutes')
     plt.ylabel('Temperature in F°')
 
 
-    axis([x_min, x_max, y_min, y_max])
-    plt.plot([args.start_time,args.start_time],[y_min,y_max],'--k')
-    plt.plot([args.end_time,args.end_time],[y_min,y_max],'--k')
+    axis([x_min, x_max, y_min_temp, y_max_temp])
+    plt.plot([args.start_time,args.start_time],[y_min_temp,y_max_temp],'--k')
+    plt.plot([args.end_time,args.end_time],[y_min_temp,y_max_temp],'--k')
     plt.plot([x_min,x_max],[args.min_temp,args.min_temp],'--k')
     plt.plot([x_min,x_max],[args.max_temp,args.max_temp],'--k')
     plt.grid(True)
-    plot(xi,y_new,'-')
 
-
-    plt.savefig(pdf_filename)
+    temp_profile=[min(args.max_temp,max(args.min_temp,a)) for a in map(int,temp_profile)]
+    plot(seconds,temp_profile,'-')
     plt.show()
-    seconds=list(xi)
-    temp_profile=[max(150,a) for a in map(int,y_new)]
-    fan_profile=[min(9,a) for a in np.linspace(15,3,len(seconds)).astype(int)]
+
+
+    #plot to get points for fan
+    fig = plt.figure(figsize=(11, 7))
+    ax = fig.add_subplot(1, 1, 1)
+    plt.xticks(np.arange(x_min,x_max,30),np.arange(x_min,x_max,30)/60,rotation = 45, ha="right")
+
+    plt.xlabel('Minutes')
+    plt.ylabel('Fan Speed (1-9)')
+
+    plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nPress the spacebar to add sequentially %d points inside the dotted area\nUse mouse right click to undo last point added' % n_points)
+
+    axis([x_min, x_max, y_min_fan, y_max_fan])
+    plt.plot([args.start_time,args.start_time],[y_min_fan,y_max_fan],'--k')
+    plt.plot([args.end_time,args.end_time],[y_min_fan,y_max_fan],'--k')
+    plt.plot([x_min,x_max],[1,1],'--k')
+    plt.plot([x_min,x_max],[9,9],'--k')
+    plt.grid(True)
+
+    cursor = Cursor(ax, useblit=True, color='k', linewidth=1)
+
+    pts = ginput(n_points_fan,show_clicks=True, mouse_pop=True) # it will wait for three clicks
+    plt.grid(True)
+    print ("The points selected are:\n")
+    print(pts) # ginput returns points as tuples
+    x_fan=list(map(lambda x: x[0],pts)) # map applies the function passed as
+    y_fan=list(map(lambda x: x[1],pts)) # first parameter to each element of pts
+    plt.close()
+
+    #sort points
+
+    idxs_sort=np.argsort(x_fan)
+
+    x_fan=list(np.array(x_fan)[idxs_sort])
+    y_fan=list(np.array(y_fan)[idxs_sort])
+
+    f=interp1d(x_fan, y_fan, kind='previous', fill_value="extrapolate")
+    fan_profile = f(seconds)
+    fan_profile =[max(1,min(9,a)) for a in fan_profile ]
+
+    #plot to get the obtained fan curve
+    fig = plt.figure(figsize=(11, 7))
+    plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nClose this plot to save the profile in: %s\nA pdf of this curve will be also saved in: %s' % (args.profile_filename,pdf_filename))
+
+    ax = fig.add_subplot(1, 1, 1)
+    plt.xticks(np.arange(x_min,x_max,30),np.arange(x_min,x_max,30)/60,rotation = 45, ha="right")
+
+    plt.xlabel('Seconds')
+    plt.ylabel('Fan Speed (1-9)')
+
+    axis([x_min, x_max, y_min_fan, y_max_fan])
+    plt.plot([args.start_time,args.start_time],[y_min_fan,y_max_fan],'--k')
+    plt.plot([args.end_time,args.end_time],[y_min_fan,y_max_fan],'--k')
+    plt.plot([x_min,x_max],[1,1],'--k')
+    plt.plot([x_min,x_max],[9,9],'--k')
+    plt.grid(True)
+
+    plot(seconds,fan_profile,'-')
+    plt.show()
+    plt.close()
+
+
+    #plot with everything
+    fig = plt.figure(figsize=(8*1.2, 10*1.2),dpi=72)
+
+    #temp
+    ax1 = fig.add_subplot(3, 1, 1)
+    plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nClose this plot to save the profile in: %s\nA pdf of this curve will be also saved in: %s\n\n Temperature Curve' % (args.profile_filename,pdf_filename))
+
+    axis([x_min, x_max, y_min_temp, y_max_temp])
+    ax1.xaxis.set_ticklabels([])
+    plt.ylabel('Temperature in F°')
+    axis([x_min, x_max, y_min_temp, y_max_temp])
+
+    plt.yticks(np.arange(y_min_fan,y_max_temp,50))
+    plt.grid(True)
+    plot(seconds,temp_profile,'-r',lw=3)
+
+    #fan
+    ax2 = fig.add_subplot(3, 1, 2)
+    plt.ylabel('Fan Speed (1-9)')
+    ax2.xaxis.set_ticklabels([])
+
+    axis([x_min, x_max, y_min_fan, y_max_fan])
+    plt.yticks(np.arange(0,10,1))
+    plt.title('Fan Curve')
+    plt.grid(True)
+
+    plot(seconds,fan_profile,'-g',lw=3)
+
+    ax3 = fig.add_subplot(3, 1, 3)
+
+    plt.xlabel('Minutes')
+    plt.xticks(np.arange(x_min,x_max,30),np.arange(x_min,x_max,30)/60,rotation = 45, ha="right")
+    plt.ylabel('Delta(BT)')
+    plt.title('ROR Curve')
+    plt.grid(True)
+
+
+    ror=[ (temp_profile[i+30]-temp_profile[i]) for i in range(len(temp_profile)-30)]
+    seconds_ror=seconds[:len(ror)]
+
+    ror = savgol_filter(ror, 31, 3)
+    plot(seconds_ror,ror,'-b',lw=3)
+
+    plt.tight_layout()
+
+    pdf_filename='target_curve_for_%s.pdf' % args.profile_filename
+    plt.savefig(pdf_filename)
+
+    plt.show()
 
     write_artisan_alarm_profile(args.profile_filename,seconds,temp_profile,fan_profile,decimate=20)
 
     print('\nProfile was saved in: %s.\n\nA pdf of this curve was saved in: %s!' % (args.profile_filename, pdf_filename))
-
     print('\nSend bugs, suggestions or *green coffee* to lucapinello AT gmail DOT com\n')
-
     print('Bye!\n')
 
 
