@@ -243,7 +243,7 @@ def main():
 
     f=interp1d(x_fan, y_fan, kind='previous', fill_value="extrapolate")
     fan_profile = f(seconds)
-    fan_profile =[max(1,min(9,a)) for a in fan_profile ]
+    fan_profile =list(map(int,[max(1,min(9,a)) for a in fan_profile ]))
 
     #plot to get the obtained fan curve
     fig = plt.figure(figsize=(11, 7))
