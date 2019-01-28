@@ -112,7 +112,7 @@ def main():
     parser.add_argument('-n','--profile_filename',  help='Output name', default='artisan_profile_alarms.alrm')
     parser.add_argument('--start_time',  type=int,  default=30)
     parser.add_argument('--end_time',  type=int,  default=810)
-    parser.add_argument('--min_temp',  type=int,  default=100)
+    parser.add_argument('--min_temp',  type=int,  default=150)
     parser.add_argument('--max_temp',  type=int,  default=500)
 
 
@@ -148,7 +148,7 @@ def main():
     plt.xlabel('Minutes')
     plt.ylabel('Temperature in F°')
 
-    plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nPress the spacebar to add sequentially %d points inside the dotted area\nUse mouse right click to undo last point added' % n_points)
+    plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nPress the spacebar to add sequentially %d points inside the dotted area\nUse mouse right click to undo last point added' % n_points_temp)
 
     axis([x_min, x_max, y_min_temp, y_max_temp])
     plt.plot([args.start_time,args.start_time],[y_min_temp,y_max_temp],'--k')
@@ -187,7 +187,7 @@ def main():
     #plot to get the obtained temp curve
     fig = plt.figure(figsize=(11, 7))
     pdf_filename='target_curve_for_%s.pdf' % args.profile_filename
-    plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nClose this plot to save the profile in: %s\nA pdf of this curve will be also saved in: %s' % (args.profile_filename,pdf_filename))
+    plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nTemperature Curve')
     ax = fig.add_subplot(1, 1, 1)
     plt.xticks(np.arange(x_min,x_max,30),np.arange(x_min,x_max,30)/60,rotation = 45, ha="right")
 
@@ -215,7 +215,7 @@ def main():
     plt.xlabel('Minutes')
     plt.ylabel('Fan Speed (1-9)')
 
-    plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nPress the spacebar to add sequentially %d points inside the dotted area\nUse mouse right click to undo last point added' % n_points)
+    plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nPress the spacebar to add sequentially %d points inside the dotted area\nUse mouse right click to undo last point added' % n_points_fan)
 
     axis([x_min, x_max, y_min_fan, y_max_fan])
     plt.plot([args.start_time,args.start_time],[y_min_fan,y_max_fan],'--k')
@@ -247,7 +247,7 @@ def main():
 
     #plot to get the obtained fan curve
     fig = plt.figure(figsize=(11, 7))
-    plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nClose this plot to save the profile in: %s\nA pdf of this curve will be also saved in: %s' % (args.profile_filename,pdf_filename))
+    plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nFan Curve')
 
     ax = fig.add_subplot(1, 1, 1)
     plt.xticks(np.arange(x_min,x_max,30),np.arange(x_min,x_max,30)/60,rotation = 45, ha="right")
@@ -272,12 +272,13 @@ def main():
 
     #temp
     ax1 = fig.add_subplot(3, 1, 1)
-    plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nClose this plot to save the profile in: %s\nA pdf of this curve will be also saved in: %s\n\n Temperature Curve' % (args.profile_filename,pdf_filename))
+    plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nClose this plot to save the profile in: %s\nA pdf of these curves will be also saved in: %s\n\n Temperature Curve' % (args.profile_filename,pdf_filename))
 
     axis([x_min, x_max, y_min_temp, y_max_temp])
     ax1.xaxis.set_ticklabels([])
     plt.ylabel('Temperature in F°')
     axis([x_min, x_max, y_min_temp, y_max_temp])
+    plt.xticks(np.arange(x_min,x_max,30),[])
 
     plt.yticks(np.arange(y_min_fan,y_max_temp,50))
     plt.grid(True)
@@ -286,7 +287,8 @@ def main():
     #fan
     ax2 = fig.add_subplot(3, 1, 2)
     plt.ylabel('Fan Speed (1-9)')
-    ax2.xaxis.set_ticklabels([])
+    plt.xticks(np.arange(x_min,x_max,30),[])
+
 
     axis([x_min, x_max, y_min_fan, y_max_fan])
     plt.yticks(np.arange(0,10,1))
