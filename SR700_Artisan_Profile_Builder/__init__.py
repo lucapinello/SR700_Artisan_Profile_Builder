@@ -159,7 +159,7 @@ def main():
 
     cursor = Cursor(ax, useblit=True, color='k', linewidth=1)
 
-    pts = ginput(n_points_temp,show_clicks=True, mouse_pop=True) # it will wait for three clicks
+    pts = ginput(n_points_temp,show_clicks=True, mouse_pop=True,timeout=0) # it will wait for three clicks
     plt.grid(True)
     print ("The points selected are:\n")
     print(pts) # ginput returns points as tuples
@@ -226,7 +226,7 @@ def main():
 
     cursor = Cursor(ax, useblit=True, color='k', linewidth=1)
 
-    pts = ginput(n_points_fan,show_clicks=True, mouse_pop=True) # it will wait for three clicks
+    pts = ginput(n_points_fan,show_clicks=True, mouse_pop=True,timeout=0) # it will wait for three clicks
     plt.grid(True)
     print ("The points selected are:\n")
     print(pts) # ginput returns points as tuples
