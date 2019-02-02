@@ -112,8 +112,8 @@ def main():
     parser.add_argument('-n','--profile_filename',  help='Output name', default='artisan_profile_alarms.alrm')
     parser.add_argument('--start_time',  type=int,  default=30)
     parser.add_argument('--end_time',  type=int,  default=810)
-    parser.add_argument('--min_temp',  type=int,  default=150)
-    parser.add_argument('--max_temp',  type=int,  default=500)
+    parser.add_argument('--min_temp',  type=int,  default=150,choices=range(150,200))
+    parser.add_argument('--max_temp',  type=int,  default=500,choices=range(400,550))
 
 
     args = parser.parse_args()
@@ -177,9 +177,11 @@ def main():
     seconds=list(np.arange(min_time,max_time,1))
 
     if use_log:
-    	[a,b]=optimize.curve_fit(lambda t,a,b: a+b*np.log10(t),  x_temp,  y_temp)[0]
-    	f_fit = lambda x: a + b*np.log10(x)
-    	temp_profile=f_fit(seconds)
+    	#[a,b]=optimize.curve_fit(lambda t,a,b: a+b*np.log10(t),  x_temp,  y_temp)[0]
+        [a,b]=optimize.curve_fit(lambda t,a,b: a+b*np.log1p(t), x_temp,  y_temp)[0]
+        f_fit = lambda x: a + b*np.log1p(x)
+        temp_profile=np.clip(f_fit(seconds),150,550)
+
     else:
     	tck_temp = interpolate.splrep(x_temp, y_temp, s=0)
     	temp_profile= interpolate.splev(seconds, tck_temp, der=0)
@@ -239,7 +241,9 @@ def main():
     idxs_sort=np.argsort(x_fan)
 
     x_fan=list(np.array(x_fan)[idxs_sort])
-    y_fan=list(np.array(y_fan)[idxs_sort])
+    y_fan=list(np.round(np.array(y_fan)[idxs_sort]))
+
+
 
     f=interp1d(x_fan, y_fan, kind='previous', fill_value="extrapolate")
     fan_profile = f(seconds)
