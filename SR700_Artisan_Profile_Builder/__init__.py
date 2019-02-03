@@ -143,24 +143,22 @@ def main():
     #plot to get points for temp
     fig = plt.figure(figsize=(11, 7))
     ax = fig.add_subplot(1, 1, 1)
-    plt.xticks(np.arange(x_min,x_max,30),np.arange(x_min,x_max,30)/60,rotation = 45, ha="right")
-
-    plt.xlabel('Minutes')
-    plt.ylabel('Temperature in F°')
-
-    plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nPress the spacebar to add sequentially %d points inside the dotted area\nUse mouse right click to undo last point added' % n_points_temp)
+    ax.set_title('\nArtisan Profile Builder - Luca Pinello 2019\n\nPress the spacebar to add sequentially %d points inside the dotted area\nUse mouse right click to undo last point added' % n_points_temp)
 
     axis([x_min, x_max, y_min_temp, y_max_temp])
+
+    plt.xticks(np.arange(x_min,x_max,30),np.arange(x_min,x_max,30)/60,rotation = 45, ha="right")
+
+    ax.set_xlabel('Minutes')
+    ax.set_ylabel('Temperature in F°')
+
+    cursor = Cursor(ax, useblit=False, color='k', linewidth=1)
     plt.plot([args.start_time,args.start_time],[y_min_temp,y_max_temp],'--k')
     plt.plot([args.end_time,args.end_time],[y_min_temp,y_max_temp],'--k')
     plt.plot([x_min,x_max],[args.min_temp,args.min_temp],'--k')
     plt.plot([x_min,x_max],[args.max_temp,args.max_temp],'--k')
     plt.grid(True)
-
-    cursor = Cursor(ax, useblit=True, color='k', linewidth=1)
-
     pts = ginput(n_points_temp,show_clicks=True, mouse_pop=True,timeout=0) # it will wait for three clicks
-    plt.grid(True)
     print ("The points selected are:\n")
     print(pts) # ginput returns points as tuples
     x_temp=list(map(lambda x: x[0],pts)) # map applies the function passed as
@@ -220,16 +218,16 @@ def main():
     plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nPress the spacebar to add sequentially %d points inside the dotted area\nUse mouse right click to undo last point added' % n_points_fan)
 
     axis([x_min, x_max, y_min_fan, y_max_fan])
+
+
+    cursor = Cursor(ax, useblit=False, color='k', linewidth=1)
     plt.plot([args.start_time,args.start_time],[y_min_fan,y_max_fan],'--k')
     plt.plot([args.end_time,args.end_time],[y_min_fan,y_max_fan],'--k')
     plt.plot([x_min,x_max],[1,1],'--k')
     plt.plot([x_min,x_max],[9,9],'--k')
     plt.grid(True)
 
-    cursor = Cursor(ax, useblit=True, color='k', linewidth=1)
-
     pts = ginput(n_points_fan,show_clicks=True, mouse_pop=True,timeout=0) # it will wait for three clicks
-    plt.grid(True)
     print ("The points selected are:\n")
     print(pts) # ginput returns points as tuples
     x_fan=list(map(lambda x: x[0],pts)) # map applies the function passed as
@@ -279,10 +277,9 @@ def main():
     plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nClose this plot to save the profile in: %s\nA pdf of these curves will be also saved in: %s\n\n Temperature Curve' % (args.profile_filename,pdf_filename))
 
     axis([x_min, x_max, y_min_temp, y_max_temp])
-    ax1.xaxis.set_ticklabels([])
-    plt.ylabel('Temperature in F°')
-    axis([x_min, x_max, y_min_temp, y_max_temp])
     plt.xticks(np.arange(x_min,x_max,30),[])
+    plt.ylabel('Temperature in F°')
+
 
     plt.yticks(np.arange(y_min_fan,y_max_temp,50))
     plt.grid(True)
@@ -290,11 +287,12 @@ def main():
 
     #fan
     ax2 = fig.add_subplot(3, 1, 2)
+    axis([x_min, x_max, 0, 10])
+
     plt.ylabel('Fan Speed (1-9)')
     plt.xticks(np.arange(x_min,x_max,30),[])
 
 
-    axis([x_min, x_max, y_min_fan, y_max_fan])
     plt.yticks(np.arange(0,10,1))
     plt.title('Fan Curve')
     plt.grid(True)
@@ -302,6 +300,7 @@ def main():
     plot(seconds,fan_profile,'-g',lw=3)
 
     ax3 = fig.add_subplot(3, 1, 3)
+
 
     plt.xlabel('Minutes')
     plt.xticks(np.arange(x_min,x_max,30),np.arange(x_min,x_max,30)/60,rotation = 45, ha="right")
@@ -314,9 +313,11 @@ def main():
     seconds_ror=seconds[:len(ror)]
 
     ror = savgol_filter(ror, 31, 3)
+    axis([x_min, x_max, 0,ror.max()+5])
     plot(seconds_ror,ror,'-b',lw=3)
 
-    plt.tight_layout()
+
+    #plt.tight_layout()
 
     pdf_filename='target_curve_for_%s.pdf' % args.profile_filename
     plt.savefig(pdf_filename)
