@@ -60,7 +60,7 @@ def write_artisan_alarm_profile(alarm_filename,seconds,temp_profile,fan_profile,
 
     #alarmflags and alarmsources 1
     profile['alarmflags']=[1]*(len_profile+4)
-    profile['alarmsources']=[1]*(len_profile+4)
+    profile['alarmsources']=[1]+[2,3]*len(temp_profile)+[1]*3
 
     #alarmtemperatures always 500
     profile['alarmtemperatures']=[500.0]*(len_profile+4)
