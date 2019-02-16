@@ -10,7 +10,7 @@ Create artisan profiles using the alarms and the modified version of the freshro
 
 ```SR700_Artisan_Profile_Builder```
 
-### This short video illustrate the setup and how to use this tool:
+### This short video illustrates the setup and how to use this tool:
 
 ![](create_profile_demo.gif)
 
