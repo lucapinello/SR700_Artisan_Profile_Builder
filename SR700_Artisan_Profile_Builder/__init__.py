@@ -42,35 +42,38 @@ def write_artisan_alarm_profile(alarm_filename,seconds,temp_profile,fan_profile,
     #13 drop
     #14 cool end
 
-    profile['alarmactions']=[16]+[6,4]*len(temp_profile)+[13,14,15]
+    profile['alarmactions']=[16]+[6,4]*len(temp_profile)+[13,14,15,-1,-1]
 
 
     #alarmstrings contains the temperature and fan values,
     #here we assume that temp and fan are alternating
-    profile['alarmstrings']=list(map(str,['charge']+flat_list(list(zip(temp_profile,fan_profile)))+['drop','cool end','off']))
+    profile['alarmstrings']=list(map(str,['charge']+flat_list(list(zip(temp_profile,fan_profile)))+['drop','cool end','off','temp Manual','fan manual']))
 
 
     #alarmconds always 1
-    profile['alarmconds']=[1]*(len_profile+4)
+    profile['alarmconds']=[1]+[1]*(len_profile)+[1]*5
+
+    idx_alrm_temp_manual=len(profile['alarmconds'])-2
+    idx_alrm_fan_manual=len(profile['alarmconds'])-1
 
     #alarmnegguards and alarmguards  and alarmtimes  -1
-    profile['alarmnegguards']=[-1]*(len_profile+4)
-    profile['alarmguards']=[-1]*(len_profile+4)
-    profile['alarmtimes']=[-1]*(len_profile+4)
+    profile['alarmnegguards']=[-1]+ [idx_alrm_temp_manual,idx_alrm_fan_manual]*len(temp_profile) +[-1]*5
+    profile['alarmguards']=[-1]*(len_profile+6)
+    profile['alarmtimes']=[-1]*(len_profile+6)
 
     #alarmflags and alarmsources 1
-    profile['alarmflags']=[1]*(len_profile+4)
-    profile['alarmsources']=[1]+[2,3]*len(temp_profile)+[1]*3
+    profile['alarmflags']=[1]*(len_profile+6)
+    profile['alarmsources']=[1]+[1,1]*len(temp_profile)+[1]*3+[2,3]
 
     #alarmtemperatures always 500
-    profile['alarmtemperatures']=[500.0]*(len_profile+4)
+    profile['alarmtemperatures']=[500]+[500]*(len_profile)+[500]*3+[0.5,0.5]
 
     #alarmoffsets is the time, we need to add 30 for accounting the preheat phase
     last_time=max(seconds)
-    profile['alarmoffsets']=list(map(int,[preheat_time]+flat_list([ (a,a) for a in seconds])+[last_time+1,last_time+1+60*3,last_time+5+60*3]))
+    profile['alarmoffsets']=list(map(int,[preheat_time]+flat_list([ (a,a) for a in seconds])+[last_time+1,last_time+1+60*3,last_time+5+60*3,0,0]))
 
     #alarmbeep always 0
-    profile['alarmbeep']=[0]*(len_profile+4)
+    profile['alarmbeep']=[0]*(len_profile+6)
 
     json.dump(profile,open(alarm_filename,'w+'))
 
