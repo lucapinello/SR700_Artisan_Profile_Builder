@@ -138,7 +138,7 @@ def main():
     y_min_temp=args.min_temp-50
     y_max_temp=args.max_temp+50
     y_min_fan=0
-    y_max_fan=10
+    y_max_fan=100
     y_min_ror=0
     y_max_ror=50
 
@@ -216,7 +216,7 @@ def main():
     plt.xticks(np.arange(x_min,x_max,30),np.arange(x_min,x_max,30)/60,rotation = 45, ha="right")
 
     plt.xlabel('Minutes')
-    plt.ylabel('Fan Speed (1-9)')
+    plt.ylabel('Fan Speed (10-90)')
 
     plt.title('\nArtisan Profile Builder - Luca Pinello 2019\n\nPress the spacebar to add sequentially %d points inside the dotted area\nUse mouse right click to undo last point added' % n_points_fan)
 
@@ -226,8 +226,8 @@ def main():
     cursor = Cursor(ax, useblit=False, color='k', linewidth=1)
     plt.plot([args.start_time,args.start_time],[y_min_fan,y_max_fan],'--k')
     plt.plot([args.end_time,args.end_time],[y_min_fan,y_max_fan],'--k')
-    plt.plot([x_min,x_max],[1,1],'--k')
-    plt.plot([x_min,x_max],[9,9],'--k')
+    plt.plot([x_min,x_max],[10,10],'--k')
+    plt.plot([x_min,x_max],[90,90],'--k')
     plt.grid(True)
 
     pts = ginput(n_points_fan,show_clicks=True, mouse_pop=True,timeout=0) # it will wait for three clicks
@@ -248,7 +248,7 @@ def main():
 
     f=interp1d(x_fan, y_fan, kind='previous', fill_value="extrapolate")
     fan_profile = f(seconds)
-    fan_profile =list(map(int,[max(1,min(9,a)) for a in fan_profile ]))
+    fan_profile =list(map(int,[max(10,min(90,int(a/10)*10)) for a in fan_profile ]))
 
     #plot to get the obtained fan curve
     fig = plt.figure(figsize=(11, 7))
@@ -258,16 +258,17 @@ def main():
     plt.xticks(np.arange(x_min,x_max,30),np.arange(x_min,x_max,30)/60,rotation = 45, ha="right")
 
     plt.xlabel('Seconds')
-    plt.ylabel('Fan Speed (1-9)')
+    plt.ylabel('Fan Speed (10-90)')
 
     axis([x_min, x_max, y_min_fan, y_max_fan])
     plt.plot([args.start_time,args.start_time],[y_min_fan,y_max_fan],'--k')
     plt.plot([args.end_time,args.end_time],[y_min_fan,y_max_fan],'--k')
-    plt.plot([x_min,x_max],[1,1],'--k')
-    plt.plot([x_min,x_max],[9,9],'--k')
+    plt.plot([x_min,x_max],[10,10],'--k')
+    plt.plot([x_min,x_max],[90,90],'--k')
     plt.grid(True)
 
     plot(seconds,fan_profile,'-')
+    #plt.yticks(np.arange(0,100,10))
     plt.show()
     plt.close()
 
@@ -290,13 +291,13 @@ def main():
 
     #fan
     ax2 = fig.add_subplot(3, 1, 2)
-    axis([x_min, x_max, 0, 10])
+    axis([x_min, x_max, 0, 100])
 
-    plt.ylabel('Fan Speed (1-9)')
+    plt.ylabel('Fan Speed (10-90)')
     plt.xticks(np.arange(x_min,x_max,30),[])
 
 
-    plt.yticks(np.arange(0,10,1))
+    plt.yticks(np.arange(0,100,10))
     plt.title('Fan Curve')
     plt.grid(True)
 
