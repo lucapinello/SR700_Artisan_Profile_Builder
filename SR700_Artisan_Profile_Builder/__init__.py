@@ -44,39 +44,42 @@ def write_artisan_alarm_profile(alarm_filename,seconds,temp_profile,fan_profile,
     #4 fan
     #13 drop
     #14 cool end
-
-    profile['alarmactions']=[16]+[6,4]*len(temp_profile)+[13,14,15,-1,-1]
+    #0 popup
+    profile['alarmactions']=[16, 0]+[6,4]*len(temp_profile)+[13,14,15,-1,-1]
 
 
     #alarmstrings contains the temperature and fan values,
     #here we assume that temp and fan are alternating
-    profile['alarmstrings']=list(map(str,['charge']+flat_list(list(zip(temp_profile,fan_profile)))+['drop','cool end','off','temp Manual','fan manual']))
+    profile['alarmstrings']=list(map(str,['charge', 'Get ready to charge in 10 seconds..']+flat_list(list(zip(temp_profile,fan_profile)))+['drop','cool end','off','temp Manual','fan manual']))
 
 
     #alarmconds always 1
-    profile['alarmconds']=[1]+[1]*(len_profile)+[1]*5
+    profile['alarmconds']=[1, 1]+[1]*(len_profile)+[1]*5
 
     idx_alrm_temp_manual=len(profile['alarmconds'])-2
     idx_alrm_fan_manual=len(profile['alarmconds'])-1
 
     #alarmnegguards and alarmguards  and alarmtimes  -1
-    profile['alarmnegguards']=[-1]+ [idx_alrm_temp_manual,idx_alrm_fan_manual]*len(temp_profile) +[-1]*5
-    profile['alarmguards']=[-1]*(len_profile+6)
-    profile['alarmtimes']=[-1]*(len_profile+6)
+    profile['alarmnegguards']=[-1, -1]+ [idx_alrm_temp_manual,idx_alrm_fan_manual]*len(temp_profile) +[-1]*5
+    profile['alarmguards']=[-1]*(len_profile+7)
+    profile['alarmtimes']=[-1]*(len_profile+7)
 
     #alarmflags and alarmsources 1
-    profile['alarmflags']=[1]*(len_profile+6)
-    profile['alarmsources']=[1]+[1,1]*len(temp_profile)+[1]*3+[2,3]
+    profile['alarmflags']=[1]*(len_profile+7)
+    profile['alarmsources']=[1,-3]+[1,1]*len(temp_profile)+[1]*3+[2,3]
 
     #alarmtemperatures always 500
-    profile['alarmtemperatures']=[500]+[500]*(len_profile)+[500]*3+[0.5,0.5]
+    profile['alarmtemperatures']=[500,500]+[500]*(len_profile)+[500]*3+[0.5,0.5]
 
     #alarmoffsets is the time, we need to add 30 for accounting the preheat phase
     last_time=max(seconds)
-    profile['alarmoffsets']=list(map(int,[preheat_time]+flat_list([ (a,a) for a in seconds])+[last_time+1,last_time+1+60*3,last_time+5+60*3,0,0]))
+    # Let roast continue for manual, discretionary drop.
+    grace_after_roast_s=120
+    cool_period=60*3
+    profile['alarmoffsets']=list(map(int,[preheat_time, preheat_time-10]+flat_list([ (a,a) for a in seconds])+[last_time+grace_after_roast_s,last_time+grace_after_roast_s+cool_period,last_time+grace_after_roast_s+cool_period+5,0,0]))
 
     #alarmbeep always 0
-    profile['alarmbeep']=[0]*(len_profile+6)
+    profile['alarmbeep']=[0]*(len_profile+7)
 
     json.dump(profile,open(alarm_filename,'w+'))
 
@@ -282,7 +285,7 @@ def main():
         pts=[(91.05571847507332, 89.98144712430428), (120.08797653958945, 79.96289424860855), (149.99999999999997, 70.68645640074213), (179.03225806451613, 60.1113172541744), (209.82404692082113, 51.02040816326531), (240.61583577712608, 39.888682745825605), (300.43988269794716, 30.24118738404453), (360.2639296187683, 20.037105751391472)]
 
     elif args.fan_file:
-        pts=read_csv(fan_file)
+        pts=read_csv(args.fan_file)
     else:
         #plot to get points for fan
         fig = plt.figure(figsize=(11, 7))
