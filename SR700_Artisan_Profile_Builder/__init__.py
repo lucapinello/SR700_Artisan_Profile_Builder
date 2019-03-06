@@ -23,11 +23,91 @@ import intervaltree
 from scipy.interpolate import UnivariateSpline
 
 from matplotlib.widgets import Cursor
+from enum import IntEnum
 
 
 flat_list = lambda l: [item for sublist in l for item in sublist]
 
-def write_artisan_alarm_profile(alarm_filename,seconds,temp_profile,fan_profile,decimate=1,preheat_time=29):
+class AlarmSource(IntEnum):
+    BT = 1
+    NONE = -3
+    T1 = 2 # temp manual
+    T2 = 3 # fan manual
+
+class AlarmAction(IntEnum):
+    NONE = -1
+    POPUP = 0
+    SLIDER_FAN = 4
+    SLIDER_TEMP = 6
+    DROP = 13
+    COOL_END = 14
+    OFF = 15
+    CHARGE = 16
+
+class AlarmCondition(IntEnum):
+    BELOW = 0
+    ABOVE = 1
+class AlarmFromTime(IntEnum):
+    START = -1
+    DROP = 6
+
+class AlarmEntry(object):
+    # corresponds to:
+    #  if alarm (guard), but not (negguard) from event (alarmtimes) time (offset) source condition value,
+    #  then action description
+
+    def __init__(self, offset, action, description,
+                 guard=-1, negguard=-1,
+                 fromtime=AlarmFromTime.START,
+                 source=AlarmSource.NONE, condition=AlarmCondition.ABOVE,
+                 value=500.0):
+        self._guard = guard
+        self._negguard = negguard
+        self._fromtime = fromtime
+        self._offset = offset
+        self._source = source
+        self._condition = condition
+        self._value = value
+        self._action = action
+        self._description = description
+
+    @property
+    def guard(self):
+        return self._guard
+
+    @property
+    def negguard(self):
+        return self._negguard
+
+    @property
+    def fromtime(self):
+        return self._fromtime.value
+
+    @property
+    def offset(self):
+        return self._offset
+
+    @property
+    def source(self):
+        return self._source.value
+
+    @property
+    def condition(self):
+        return self._condition.value
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def action(self):
+        return self._action.value
+
+    @property
+    def description(self):
+        return self._description
+
+def write_artisan_alarm_profile(alarm_filename, seconds, temp_profile, fan_profile, decimate=1, preheat_time=29, extended_grace_period=0, disable_manual_until_s=0):
 
     profile=OrderedDict()
     if decimate>1:
@@ -35,51 +115,64 @@ def write_artisan_alarm_profile(alarm_filename,seconds,temp_profile,fan_profile,
         temp_profile=temp_profile[::decimate]
         fan_profile=fan_profile[::decimate]
 
+    entries = []
+    idx_alarm_temp_guard=-1
+    idx_alarm_fan_guard=-1
+    curidx = 0
 
-    len_profile=len(temp_profile)*2
+    # disable manual temp/fan control alarms until disable_manual_until_s have passed.
+    # workaround for noisy thermocouple
+    if disable_manual_until_s > 0:
+        entries.append(AlarmEntry(offset=disable_manual_until_s, action=AlarmAction.NONE, description="wait until allowing manual temp control"))
+        idx_alarm_temp_guard=0
+        entries.append(AlarmEntry(offset=disable_manual_until_s, action=AlarmAction.NONE, description="wait until allowing manual fan control"))
+        idx_alarm_fan_guard=1
+        curidx = 2
 
-    #alarmactions
-    #16 charge
-    #6 temp
-    #4 fan
-    #13 drop
-    #14 cool end
-    #0 popup
-    profile['alarmactions']=[16, 0]+[6,4]*len(temp_profile)+[13,14,15,-1,-1]
+    # temp manual check
+    entries.append(AlarmEntry(guard=idx_alarm_temp_guard, offset=0, source=AlarmSource.T1, value=0.5, action=AlarmAction.NONE, description="temp manual"))
+    idx_alrm_temp_manual = curidx
+    # fan manual check
+    entries.append(AlarmEntry(guard=idx_alarm_fan_guard, offset=0, source=AlarmSource.T2, value=0.5, action=AlarmAction.NONE, description="fan manual"))
+    idx_alrm_fan_manual = curidx+1
+    curidx += 2
 
+    # charge
+    entries.append(AlarmEntry(offset=preheat_time, action=AlarmAction.CHARGE, description="Charge"))
+    curidx += 1
 
-    #alarmstrings contains the temperature and fan values,
-    #here we assume that temp and fan are alternating
-    profile['alarmstrings']=list(map(str,['charge', 'Get ready to charge in 10 seconds..']+flat_list(list(zip(temp_profile,fan_profile)))+['drop','cool end','off','temp Manual','fan manual']))
+    # auto-shut off after drop and 3 minutes at least
+    entries.append(AlarmEntry(fromtime=AlarmFromTime.DROP, offset=180, action=AlarmAction.NONE, description="Wait for typical cooling period"))
 
+    # and wait until bean temp drops below 125
+    entries.append(AlarmEntry(guard=curidx, fromtime=AlarmFromTime.DROP, offset=0, source=AlarmSource.BT, condition=AlarmCondition.BELOW, value=125.0, action=AlarmAction.OFF, description="After drop, turn off when cool"))
+    curidx += 2
 
-    #alarmconds always 1
-    profile['alarmconds']=[1, 1]+[1]*(len_profile)+[1]*5
+    # temperature/fan profile
+    for i in range(len(seconds)):
+        entries.append(AlarmEntry(negguard=idx_alrm_temp_manual, offset=int(seconds[i]), action=AlarmAction.SLIDER_TEMP, description=temp_profile[i]))
+        entries.append(AlarmEntry(negguard=idx_alrm_fan_manual, offset=int(seconds[i]), action=AlarmAction.SLIDER_FAN, description=fan_profile[i]))
 
-    idx_alrm_temp_manual=len(profile['alarmconds'])-2
-    idx_alrm_fan_manual=len(profile['alarmconds'])-1
-
-    #alarmnegguards and alarmguards  and alarmtimes  -1
-    profile['alarmnegguards']=[-1, -1]+ [idx_alrm_temp_manual,idx_alrm_fan_manual]*len(temp_profile) +[-1]*5
-    profile['alarmguards']=[-1]*(len_profile+7)
-    profile['alarmtimes']=[-1]*(len_profile+7)
-
-    #alarmflags and alarmsources 1
-    profile['alarmflags']=[1]*(len_profile+7)
-    profile['alarmsources']=[1,-3]+[1,1]*len(temp_profile)+[1]*3+[2,3]
-
-    #alarmtemperatures always 500
-    profile['alarmtemperatures']=[500,500]+[500]*(len_profile)+[500]*3+[0.5,0.5]
-
-    #alarmoffsets is the time, we need to add 30 for accounting the preheat phase
-    last_time=max(seconds)
-    # Let roast continue for manual, discretionary drop.
-    grace_after_roast_s=120
+    # if we want to be able to extend roast, extended_grace_period allows for it.
+    last_time=int(max(seconds)) + 1 + extended_grace_period
     cool_period=60*3
-    profile['alarmoffsets']=list(map(int,[preheat_time, preheat_time-10]+flat_list([ (a,a) for a in seconds])+[last_time+grace_after_roast_s,last_time+grace_after_roast_s+cool_period,last_time+grace_after_roast_s+cool_period+5,0,0]))
 
-    #alarmbeep always 0
-    profile['alarmbeep']=[0]*(len_profile+7)
+    entries.append(AlarmEntry(offset=last_time, action=AlarmAction.DROP, description="drop"))
+    entries.append(AlarmEntry(offset=last_time+cool_period, action=AlarmAction.COOL_END, description="cool end"))
+    entries.append(AlarmEntry(offset=last_time+cool_period+5, action=AlarmAction.OFF, description="off"))
+
+    # build profile
+    profile['alarmflags'] = [1 for e in entries]  # always enabled
+    profile['alarmguards'] = [e.guard for e in entries]
+    profile['alarmnegguards'] = [e.negguard for e in entries]
+    profile['alarmtimes'] = [e.fromtime for e in entries]
+    profile['alarmoffsets'] = [e.offset for e in entries]
+    profile['alarmsources'] = [e.source for e in entries]
+    profile['alarmconds'] = [e.condition for e in entries]
+    profile['alarmtemperatures'] = [e.value for e in entries]
+    profile['alarmactions'] = [e.action for e in entries]
+    profile['alarmbeep'] = [0 for e in entries]
+    profile['alarmstrings'] = [e.description for e in entries]
 
     json.dump(profile,open(alarm_filename,'w+'))
 
@@ -133,6 +226,8 @@ def main():
     parser.add_argument('-n','--profile_filename',  help='Output name', default='artisan_profile_alarms.alrm')
     parser.add_argument('--start_time',  type=int,  default=30)
     parser.add_argument('--end_time',  type=int,  default=720)
+    parser.add_argument('--disable_manual_until_s',  type=int,  default=0)
+    parser.add_argument('--extended_grace_period',  type=int,  default=0)
     parser.add_argument('--min_temp',  type=int,  default=120,choices=range(120,200))
     parser.add_argument('--max_temp',  type=int,  default=500,choices=range(400,550))
     parser.add_argument('--fit_curve',  type=str,  default='spline',choices=['log','spline'])
@@ -410,7 +505,7 @@ def main():
 
     plt.show()
 
-    write_artisan_alarm_profile(args.profile_filename+'.alrm',seconds,temp_profile,fan_profile,decimate=20)
+    write_artisan_alarm_profile(args.profile_filename+'.alrm', seconds, temp_profile, fan_profile, decimate=20, extended_grace_period=args.extended_grace_period, disable_manual_until_s=args.disable_manual_until_s)
 
     print('\nProfile was saved in: %s.\n\nA pdf of this curve was saved in: %s!' % (args.profile_filename, pdf_filename))
     print('\nSend bugs, suggestions or *green coffee* to lucapinello AT gmail DOT com\n')
