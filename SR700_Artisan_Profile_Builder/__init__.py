@@ -221,7 +221,7 @@ def main():
 
     parser = argparse.ArgumentParser(description='Parameters',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--n_points_temp',  type=int,  default=3)
+    parser.add_argument('--n_points_temp',  type=int,  default=4)
     parser.add_argument('--n_points_fan',  type=int,  default=8)
     parser.add_argument('-n','--profile_filename',  help='Output name', default='artisan_profile_alarms.alrm')
     parser.add_argument('--start_time',  type=int,  default=30)
@@ -234,6 +234,7 @@ def main():
     parser.add_argument('--use_precomputed_fan',  action='store_true')
     parser.add_argument('--temp_file',  type=str, default=None)
     parser.add_argument('--fan_file',  type=str, default=None)
+    parser.add_argument('--decimate',  type=int, default=20, choices=range(1,30))
 
 
 
@@ -252,7 +253,6 @@ def main():
     else:
         use_log=False
 
-    print(use_log)
     min_time=args.start_time
     max_time=args.end_time
 
@@ -505,7 +505,7 @@ def main():
 
     plt.show()
 
-    write_artisan_alarm_profile(args.profile_filename+'.alrm', seconds, temp_profile, fan_profile, decimate=20, extended_grace_period=args.extended_grace_period, disable_manual_until_s=args.disable_manual_until_s)
+    write_artisan_alarm_profile(args.profile_filename+'.alrm', seconds, temp_profile, fan_profile, decimate=args.decimate, extended_grace_period=args.extended_grace_period, disable_manual_until_s=args.disable_manual_until_s)
 
     print('\nProfile was saved in: %s.\n\nA pdf of this curve was saved in: %s!' % (args.profile_filename, pdf_filename))
     print('\nSend bugs, suggestions or *green coffee* to lucapinello AT gmail DOT com\n')
